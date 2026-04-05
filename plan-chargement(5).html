@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Plan de Chargement</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --bg: #f0ece4;
+    --panel: #ffffff;
+    --truck: #2c2c2c;
+    --truck-floor: #e8e2d6;
+    --accent: #e85d26;
+    --text: #1a1a1a;
+    --text-light: #888;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 10px;
+    overflow-x: hidden;
+  }
+
+  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .header h1 { font-size: 1.1rem; font-weight: 700; }
+  .btn-clear {
+    font-family: inherit; font-weight: 700; font-size: 0.7rem;
+    border: 2px solid #ddd; border-radius: 8px; padding: 5px 10px;
+    cursor: pointer; background: transparent; color: var(--text-light);
+  }
+  .btn-clear:hover { border-color: #f44; color: #f44; }
+
+  /* ===== TRUCK ===== */
+  .truck-section {
+    position: sticky; top: 0; z-index: 50;
+    background: var(--bg);
+    margin: 0 -10px; padding: 0 10px 8px;
+  }
+
+  .truck-scroll {
+    overflow-x: auto; overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 6px;
+    scrollbar-width: thin; scrollbar-color: #ccc transparent;
+  }
+  .truck-scroll::-webkit-scrollbar { height: 5px; }
+  .truck-scroll::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+
+  .truck-outer { display: flex; align-items: stretch; }
+
+  .cab {
+    width: 28px; flex-shrink: 0;
+    background: var(--truck); border-radius: 6px 0 0 6px;
+    display: flex; align-items: center; justify-content: center;
+    color: #999; font-size: 0.5rem; font-weight: 700;
+    writing-mode: vertical-lr; text-orientation: mixed; letter-spacing: 1px;
+  }
+
+  .trailer-wrap {
+    flex: 1; border: 3px solid var(--truck); border-left: none;
+    border-radius: 0 4px 4px 0; overflow: hidden;
+    position: relative; background: var(--truck-floor);
+  }
+
+  .trailer-grid { position: relative; width: 100%; }
+
+  .grid-cell {
+    position: absolute;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center; overflow: hidden;
+    font-weight: 600; line-height: 1.1;
+    border-radius: 2px;
+  }
+
+  .grid-cell.bac {
+    border: 2px solid rgba(0,0,0,0.15);
+    color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  }
+
+  .grid-cell.bottiche {
+    border: 2px solid rgba(0,0,0,0.15);
+    color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  }
+
+  .scroll-hint {
+    position: absolute; top: 0; bottom: 0; width: 24px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem; color: rgba(0,0,0,0.2);
+    pointer-events: none; z-index: 5;
+  }
+  .scroll-hint.hint-right { right: 0; background: linear-gradient(to left, rgba(240,236,228,0.9), transparent); }
+  .scroll-hint.hint-left { left: 0; background: linear-gradient(to right, rgba(240,236,228,0.9), transparent); }
+
+  /* ===== INPUT ===== */
+  .input-panel {
+    background: var(--panel); border-radius: 14px;
+    box-shadow: var(--shadow); padding: 14px; margin-bottom: 10px;
+  }
+
+  .type-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: stretch; }
+
+  .type-card {
+    flex: 1; border: 3px solid #e0e0e0; border-radius: 12px;
+    padding: 10px 6px; cursor: pointer; transition: all 0.15s;
+    text-align: center; background: #fafafa; user-select: none;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .type-card.selected-bac { border-color: #4a9e5c; background: #eaf6ed; }
+  .type-card.selected-bottiche { border-color: #e2b93b; background: #fdf6e3; }
+
+  .type-card .icon { margin-bottom: 4px; border-radius: 3px; }
+  .type-card .icon.bac-icon { background: #4a9e5c; width: 44px; height: 30px; }
+  .type-card .icon.bottiche-icon { background: #e2b93b; width: 28px; height: 24px; }
+  .type-card .type-label { font-weight: 700; font-size: 0.85rem; }
+
+  .btn-rotate {
+    font-family: inherit; font-weight: 700; font-size: 0.7rem;
+    border: 2px solid #e2b93b; border-radius: 12px;
+    padding: 6px 10px; cursor: pointer;
+    background: #fdf6e3; color: #c49a1f;
+    white-space: nowrap; flex: 0 0 auto;
+    display: flex; align-items: center; justify-content: center; min-width: 50px;
+  }
+  .btn-rotate:hover { background: #e2b93b; color: #fff; }
+  .btn-rotate:active { transform: scale(0.97); }
+
+  .fields-row { display: flex; gap: 8px; }
+  .field { display: flex; flex-direction: column; gap: 3px; flex: 1; }
+  .field label { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-light); }
+  .field input { border: 2px solid #e0e0e0; border-radius: 8px; padding: 9px; font-size: 0.85rem; font-family: inherit; width: 100%; }
+  .field input:focus { outline: none; border-color: var(--accent); }
+  .field-qty { flex: 0 0 55px; }
+  .field-qty input { text-align: center; }
+
+  .bottom-row { display: flex; gap: 8px; margin-top: 10px; }
+
+  .btn-add {
+    font-family: inherit; font-weight: 700; font-size: 0.85rem;
+    border: none; border-radius: 10px; padding: 10px 0;
+    cursor: pointer; background: var(--accent); color: #fff; flex: 1;
+  }
+  .btn-add:hover { background: #d14d1a; }
+  .btn-add:active { transform: scale(0.97); }
+
+  .btn-direction {
+    font-family: inherit; font-weight: 700; font-size: 0.7rem;
+    border: 2px solid #ccc; border-radius: 10px; padding: 10px 12px;
+    cursor: pointer; background: #fafafa; color: var(--text-light);
+    white-space: nowrap; flex: 0 0 auto;
+  }
+  .btn-direction:hover { border-color: var(--text); color: var(--text); }
+  .btn-direction:active { transform: scale(0.97); }
+
+  /* ===== SUMMARY ===== */
+  .summary {
+    background: var(--panel); border-radius: 14px;
+    box-shadow: var(--shadow); padding: 14px;
+  }
+  .summary h3 { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-light); margin-bottom: 8px; }
+
+  .summary-grid { display: flex; gap: 8px; margin-bottom: 10px; }
+  .summary-stat { flex: 1; background: var(--bg); border-radius: 10px; padding: 8px; text-align: center; }
+  .summary-stat .val { font-size: 1.3rem; font-weight: 700; }
+  .summary-stat .lbl { font-size: 0.6rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .item-list-entry {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 0.8rem;
+  }
+  .item-list-entry:last-child { border-bottom: none; }
+
+  .color-swatch {
+    width: 14px; height: 14px; flex-shrink: 0; border-radius: 4px;
+    border: 1px solid rgba(0,0,0,0.15);
+  }
+
+  .entry-info { flex: 1; }
+  .entry-info .name { font-weight: 600; font-size: 0.8rem; }
+  .entry-info .apporteur { font-size: 0.68rem; color: var(--text-light); }
+
+  .btn-del {
+    width: 30px; height: 30px; border: none; border-radius: 8px;
+    background: #fdeaea; color: #d44; cursor: pointer;
+    font-size: 0.9rem; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .btn-del:hover { background: #f9cdcd; }
+  .btn-del:active { transform: scale(0.9); }
+
+  .empty-msg { color: var(--text-light); font-size: 0.78rem; font-style: italic; text-align: center; padding: 14px 0; }
+
+  /* SVG hatching for bottiches */
+  .hatch-overlay {
+    position: absolute; inset: 0; pointer-events: none; border-radius: 2px; overflow: hidden;
+  }
+</style>
+</head>
+<body>
+
+<!-- SVG pattern for bottiche hatching -->
+<svg width="0" height="0" style="position:absolute;">
+  <defs>
+    <pattern id="hatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+      <line x1="0" y1="0" x2="0" y2="6" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
+    </pattern>
+  </defs>
+</svg>
+
+<div class="header">
+  <h1>Plan de Chargement</h1>
+  <button class="btn-clear" onclick="clearAll()">Tout vider</button>
+</div>
+
+<!-- TRUCK -->
+<div class="truck-section">
+  <div style="position:relative;">
+    <div class="truck-scroll" id="truckScroll">
+      <div class="truck-outer" id="truckOuter">
+        <div class="cab">CAB</div>
+        <div class="trailer-wrap" id="trailer">
+          <div class="trailer-grid" id="trailerGrid"></div>
+        </div>
+      </div>
+    </div>
+    <div class="scroll-hint hint-right" id="scrollHintR">›</div>
+    <div class="scroll-hint hint-left" id="scrollHintL" style="display:none;">‹</div>
+  </div>
+</div>
+
+<!-- INPUT -->
+<div class="input-panel">
+  <div class="type-row">
+    <div class="type-card selected-bac" id="card-bac" onclick="selectType('bac')">
+      <div class="icon bac-icon"></div>
+      <div class="type-label">Bac</div>
+    </div>
+    <div class="type-card" id="card-bottiche" onclick="selectType('bottiche')">
+      <div class="icon bottiche-icon"></div>
+      <div class="type-label">Bottiche</div>
+    </div>
+    <button class="btn-rotate" onclick="toggleOrientation()" title="Sens des bottiches">
+      <span id="rotateLabel">↻ 3</span>
+    </button>
+  </div>
+  <div class="fields-row">
+    <div class="field field-qty">
+      <label>Qté</label>
+      <input type="number" id="inputQty" min="1" max="99" value="1">
+    </div>
+    <div class="field">
+      <label>Apporteur</label>
+      <input type="text" id="inputApporteur" placeholder="Nom">
+    </div>
+  </div>
+  <div class="bottom-row">
+    <button class="btn-add" onclick="addItems()">Ajouter</button>
+    <button class="btn-direction" onclick="toggleDirection()" id="btnDirection">Char. gauche</button>
+  </div>
+</div>
+
+<!-- SUMMARY -->
+<div class="summary">
+  <h3>Résumé du chargement</h3>
+  <div class="summary-grid">
+    <div class="summary-stat"><div class="val" id="statBacs">0</div><div class="lbl">Bacs</div></div>
+    <div class="summary-stat"><div class="val" id="statBottiches">0</div><div class="lbl">Bottiches</div></div>
+  </div>
+  <div id="itemListContent">
+    <div class="empty-msg">Aucun article dans le camion</div>
+  </div>
+</div>
+
+<script>
+  const TRAILER_W = 245;
+  const TRAILER_L = 1360;
+  const BAC_ACROSS = 116;
+  const BAC_DEPTH = 163;
+  const BAC_PER_ROW = 2;
+
+  // Palette of distinct, saturated colors for apporteurs
+  const COLORS = [
+    '#3a86c2', '#e05535', '#4a9e5c', '#9b59b6',
+    '#e8913a', '#1abc9c', '#e74c8b', '#5d6dc4',
+    '#2ecc71', '#c0392b', '#f39c12', '#16a085',
+    '#8e44ad', '#d35400', '#2980b9', '#27ae60',
+    '#e2b93b', '#7f8c8d', '#e84393', '#00b894',
+  ];
+
+  let apporteurColorMap = {};
+  let colorIndex = 0;
+
+  function getApporteurColor(name) {
+    if (!apporteurColorMap[name]) {
+      apporteurColorMap[name] = COLORS[colorIndex % COLORS.length];
+      colorIndex++;
+    }
+    return apporteurColorMap[name];
+  }
+
+  let botticheOrient = 0;
+  let stackDirection = 'left'; // 'left' = top-down, 'right' = bottom-up
+  let groups = [];
+  let gid = 0;
+  let selectedType = 'bac';
+
+  function getBotticheDims() {
+    if (botticheOrient === 0) return { w: 73, l: 65, perRow: 3 };
+    else return { w: 65, l: 73, perRow: 4 };
+  }
+
+  function selectType(t) {
+    selectedType = t;
+    document.getElementById('card-bac').className = 'type-card' + (t === 'bac' ? ' selected-bac' : '');
+    document.getElementById('card-bottiche').className = 'type-card' + (t === 'bottiche' ? ' selected-bottiche' : '');
+  }
+
+  function toggleOrientation() {
+    botticheOrient = botticheOrient === 0 ? 1 : 0;
+    document.getElementById('rotateLabel').textContent = `↻ ${getBotticheDims().perRow}`;
+    render();
+  }
+
+  function toggleDirection() {
+    stackDirection = stackDirection === 'left' ? 'right' : 'left';
+    document.getElementById('btnDirection').textContent =
+      stackDirection === 'left' ? 'Char. gauche' : 'Char. droite';
+    render();
+  }
+
+  function addItems() {
+    const qty = Math.max(1, Math.min(99, parseInt(document.getElementById('inputQty').value) || 1));
+    const apporteur = document.getElementById('inputApporteur').value.trim() || '—';
+    getApporteurColor(apporteur); // pre-assign color
+    groups.push({ id: gid++, type: selectedType, apporteur, count: qty });
+    render();
+  }
+
+  function removeGroup(id) {
+    groups = groups.filter(g => g.id !== id);
+    rebuildColorMap();
+    render();
+  }
+
+  function clearAll() {
+    groups = [];
+    apporteurColorMap = {};
+    colorIndex = 0;
+    render();
+  }
+
+  function rebuildColorMap() {
+    // Keep colors stable for remaining apporteurs
+    const used = new Set(groups.map(g => g.apporteur));
+    for (const key of Object.keys(apporteurColorMap)) {
+      if (!used.has(key)) delete apporteurColorMap[key];
+    }
+  }
+
+  function render() {
+    const scrollContainer = document.getElementById('truckScroll');
+    const outerEl = document.getElementById('truckOuter');
+    const trailer = document.getElementById('trailer');
+    const grid = document.getElementById('trailerGrid');
+
+    const viewW = scrollContainer.clientWidth;
+    const totalTruckW = viewW * 1.85;
+    const trailerW = totalTruckW - 28;
+    outerEl.style.width = totalTruckW + 'px';
+
+    const scale = trailerW / TRAILER_L;
+    const trailerH = TRAILER_W * scale;
+
+    trailer.style.height = trailerH + 'px';
+    grid.innerHTML = '';
+    grid.style.height = trailerH + 'px';
+    grid.style.width = trailerW + 'px';
+
+    let allItems = [];
+    groups.forEach(g => {
+      for (let i = 0; i < g.count; i++) {
+        allItems.push({ type: g.type, apporteur: g.apporteur });
+      }
+    });
+
+    const bd = getBotticheDims();
+    const fontSize = Math.max(7, Math.min(11, trailerH / 6));
+
+    let usedCm = 0;
+    let idx = 0;
+
+    while (idx < allItems.length && usedCm < TRAILER_L) {
+      const item = allItems[idx];
+
+      if (item.type === 'bac') {
+        const colDepth = BAC_DEPTH;
+        const cellAcross = BAC_ACROSS;
+        let row = 0;
+        while (idx < allItems.length && allItems[idx].type === 'bac' && row < BAC_PER_ROW) {
+          const it = allItems[idx];
+          const color = getApporteurColor(it.apporteur);
+          const el = document.createElement('div');
+          el.className = 'grid-cell bac';
+          el.style.left = (usedCm * scale) + 'px';
+          el.style.width = (colDepth * scale) + 'px';
+          el.style.height = (cellAcross * scale) + 'px';
+          el.style.fontSize = fontSize + 'px';
+          el.style.background = color;
+          el.textContent = it.apporteur;
+
+          if (stackDirection === 'left') {
+            el.style.top = (row * cellAcross * scale) + 'px';
+          } else {
+            el.style.bottom = (row * cellAcross * scale) + 'px';
+          }
+
+          grid.appendChild(el);
+          row++; idx++;
+        }
+        usedCm += colDepth;
+      } else {
+        const colDepth = bd.l;
+        const cellAcross = bd.w;
+        const perRow = bd.perRow;
+        let row = 0;
+        while (idx < allItems.length && allItems[idx].type === 'bottiche' && row < perRow) {
+          const it = allItems[idx];
+          const color = getApporteurColor(it.apporteur);
+          const el = document.createElement('div');
+          el.className = 'grid-cell bottiche';
+          el.style.left = (usedCm * scale) + 'px';
+          el.style.width = (colDepth * scale) + 'px';
+          el.style.height = (cellAcross * scale) + 'px';
+          el.style.fontSize = Math.max(6, fontSize - 1) + 'px';
+          el.style.background = color;
+          el.textContent = it.apporteur;
+
+          // Hatch overlay for bottiches
+          const hatch = document.createElement('div');
+          hatch.className = 'hatch-overlay';
+          hatch.innerHTML = `<svg width="100%" height="100%"><rect width="100%" height="100%" fill="url(#hatch)"/></svg>`;
+          el.appendChild(hatch);
+
+          if (stackDirection === 'left') {
+            el.style.top = (row * cellAcross * scale) + 'px';
+          } else {
+            el.style.bottom = (row * cellAcross * scale) + 'px';
+          }
+
+          grid.appendChild(el);
+          row++; idx++;
+        }
+        usedCm += colDepth;
+      }
+    }
+
+    updateScrollHints();
+    scrollContainer.scrollLeft = Math.max(0, usedCm * scale - viewW + 60);
+    updateSummary();
+  }
+
+  function updateScrollHints() {
+    const sc = document.getElementById('truckScroll');
+    const hintR = document.getElementById('scrollHintR');
+    const hintL = document.getElementById('scrollHintL');
+    function check() {
+      hintR.style.display = sc.scrollLeft < sc.scrollWidth - sc.clientWidth - 5 ? 'flex' : 'none';
+      hintL.style.display = sc.scrollLeft > 5 ? 'flex' : 'none';
+    }
+    check();
+    sc.removeEventListener('scroll', check);
+    sc.addEventListener('scroll', check);
+  }
+
+  function updateSummary() {
+    const bacs = groups.filter(g => g.type === 'bac').reduce((s, g) => s + g.count, 0);
+    const bottiches = groups.filter(g => g.type === 'bottiche').reduce((s, g) => s + g.count, 0);
+    document.getElementById('statBacs').textContent = bacs;
+    document.getElementById('statBottiches').textContent = bottiches;
+
+    const listEl = document.getElementById('itemListContent');
+    if (groups.length === 0) {
+      listEl.innerHTML = '<div class="empty-msg">Aucun article dans le camion</div>';
+      return;
+    }
+    listEl.innerHTML = groups.map(g => {
+      const color = getApporteurColor(g.apporteur);
+      const typeLabel = g.type === 'bac' ? 'Bac' : 'Bottiche';
+      return `
+        <div class="item-list-entry">
+          <div class="color-swatch" style="background:${color};"></div>
+          <div class="entry-info">
+            <div class="name">${g.count}× ${typeLabel}</div>
+            <div class="apporteur">${g.apporteur}</div>
+          </div>
+          <button class="btn-del" onclick="removeGroup(${g.id})">🗑</button>
+        </div>`;
+    }).join('');
+  }
+
+  window.addEventListener('load', render);
+  window.addEventListener('resize', render);
+</script>
+</body>
+</html>
