@@ -29,7 +29,7 @@
     overflow-x: hidden;
   }
 
-  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
   .header h1 { font-size: 1.1rem; font-weight: 700; }
   .btn-clear {
     font-family: inherit; font-weight: 700; font-size: 0.7rem;
@@ -37,6 +37,20 @@
     cursor: pointer; background: transparent; color: var(--text-light);
   }
   .btn-clear:hover { border-color: #f44; color: #f44; }
+
+  .immat-bar {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+  }
+  .immat-bar label {
+    font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.5px; color: var(--text-light); white-space: nowrap;
+  }
+  .immat-bar input {
+    border: 2px solid #e0e0e0; border-radius: 8px; padding: 7px 10px;
+    font-size: 0.85rem; font-family: inherit; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px; width: 140px;
+  }
+  .immat-bar input:focus { outline: none; border-color: var(--accent); }
 
   /* ===== TRUCK ===== */
   .truck-section {
@@ -47,8 +61,7 @@
 
   .truck-scroll {
     overflow-x: auto; overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    border-radius: 6px;
+    -webkit-overflow-scrolling: touch; border-radius: 6px;
     scrollbar-width: thin; scrollbar-color: #ccc transparent;
   }
   .truck-scroll::-webkit-scrollbar { height: 5px; }
@@ -74,20 +87,22 @@
 
   .grid-cell {
     position: absolute;
-    display: flex; align-items: center; justify-content: center;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
     text-align: center; overflow: hidden;
-    font-weight: 600; line-height: 1.1;
+    font-weight: 600; line-height: 1.05;
     border-radius: 2px;
-  }
-
-  .grid-cell.bac {
-    border: 2px solid rgba(0,0,0,0.15);
+    border: 1px solid rgba(0,0,0,0.12);
     color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.3);
   }
 
-  .grid-cell.bottiche {
-    border: 2px solid rgba(0,0,0,0.15);
-    color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  .grid-cell .cell-apporteur {
+    font-weight: 700;
+  }
+
+  .grid-cell .cell-cepage {
+    font-weight: 400;
+    opacity: 0.85;
+    font-style: italic;
   }
 
   .scroll-hint {
@@ -98,6 +113,10 @@
   }
   .scroll-hint.hint-right { right: 0; background: linear-gradient(to left, rgba(240,236,228,0.9), transparent); }
   .scroll-hint.hint-left { left: 0; background: linear-gradient(to right, rgba(240,236,228,0.9), transparent); }
+
+  .hatch-overlay {
+    position: absolute; inset: 0; pointer-events: none; border-radius: 2px; overflow: hidden;
+  }
 
   /* ===== INPUT ===== */
   .input-panel {
@@ -132,7 +151,7 @@
   .btn-rotate:hover { background: #e2b93b; color: #fff; }
   .btn-rotate:active { transform: scale(0.97); }
 
-  .fields-row { display: flex; gap: 8px; }
+  .fields-row { display: flex; gap: 8px; margin-bottom: 8px; }
   .field { display: flex; flex-direction: column; gap: 3px; flex: 1; }
   .field label { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-light); }
   .field input { border: 2px solid #e0e0e0; border-radius: 8px; padding: 9px; font-size: 0.85rem; font-family: inherit; width: 100%; }
@@ -151,8 +170,8 @@
   .btn-add:active { transform: scale(0.97); }
 
   .btn-direction {
-    font-family: inherit; font-weight: 700; font-size: 0.7rem;
-    border: 2px solid #ccc; border-radius: 10px; padding: 10px 12px;
+    font-family: inherit; font-weight: 700; font-size: 0.65rem;
+    border: 2px solid #ccc; border-radius: 10px; padding: 10px 10px;
     cursor: pointer; background: #fafafa; color: var(--text-light);
     white-space: nowrap; flex: 0 0 auto;
   }
@@ -184,7 +203,7 @@
 
   .entry-info { flex: 1; }
   .entry-info .name { font-weight: 600; font-size: 0.8rem; }
-  .entry-info .apporteur { font-size: 0.68rem; color: var(--text-light); }
+  .entry-info .detail { font-size: 0.68rem; color: var(--text-light); }
 
   .btn-del {
     width: 30px; height: 30px; border: none; border-radius: 8px;
@@ -196,16 +215,10 @@
   .btn-del:active { transform: scale(0.9); }
 
   .empty-msg { color: var(--text-light); font-size: 0.78rem; font-style: italic; text-align: center; padding: 14px 0; }
-
-  /* SVG hatching for bottiches */
-  .hatch-overlay {
-    position: absolute; inset: 0; pointer-events: none; border-radius: 2px; overflow: hidden;
-  }
 </style>
 </head>
 <body>
 
-<!-- SVG pattern for bottiche hatching -->
 <svg width="0" height="0" style="position:absolute;">
   <defs>
     <pattern id="hatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
@@ -217,6 +230,11 @@
 <div class="header">
   <h1>Plan de Chargement</h1>
   <button class="btn-clear" onclick="clearAll()">Tout vider</button>
+</div>
+
+<div class="immat-bar">
+  <label>Remorque</label>
+  <input type="text" id="inputImmat" placeholder="AA-000-AA">
 </div>
 
 <!-- TRUCK -->
@@ -260,6 +278,12 @@
       <input type="text" id="inputApporteur" placeholder="Nom">
     </div>
   </div>
+  <div class="fields-row">
+    <div class="field">
+      <label>Cépage</label>
+      <input type="text" id="inputCepage" placeholder="Cépage">
+    </div>
+  </div>
   <div class="bottom-row">
     <button class="btn-add" onclick="addItems()">Ajouter</button>
     <button class="btn-direction" onclick="toggleDirection()" id="btnDirection">Char. gauche</button>
@@ -285,7 +309,11 @@
   const BAC_DEPTH = 163;
   const BAC_PER_ROW = 2;
 
-  // Palette of distinct, saturated colors for apporteurs
+  const IMBRIC_BOTTICHE_W = 65;
+  const IMBRIC_BOTTICHE_D = 65;
+  const IMBRIC_PER_WIDTH = 2;
+  const IMBRIC_PER_DEPTH = 2;
+
   const COLORS = [
     '#3a86c2', '#e05535', '#4a9e5c', '#9b59b6',
     '#e8913a', '#1abc9c', '#e74c8b', '#5d6dc4',
@@ -306,7 +334,12 @@
   }
 
   let botticheOrient = 0;
-  let stackDirection = 'left'; // 'left' = top-down, 'right' = bottom-up
+  // Vue de dessus, cabine à gauche:
+  // Conducteur = en bas (gauche du camion dans le sens de la marche)
+  // Passager = en haut (droite du camion dans le sens de la marche)
+  // "Char. gauche" = côté conducteur = commence par le bas
+  // "Char. droite" = côté passager = commence par le haut
+  let stackDirection = 'left'; // left = conducteur = bottom-up
   let groups = [];
   let gid = 0;
   let selectedType = 'bac';
@@ -338,8 +371,9 @@
   function addItems() {
     const qty = Math.max(1, Math.min(99, parseInt(document.getElementById('inputQty').value) || 1));
     const apporteur = document.getElementById('inputApporteur').value.trim() || '—';
-    getApporteurColor(apporteur); // pre-assign color
-    groups.push({ id: gid++, type: selectedType, apporteur, count: qty });
+    const cepage = document.getElementById('inputCepage').value.trim() || '';
+    getApporteurColor(apporteur);
+    groups.push({ id: gid++, type: selectedType, apporteur, cepage, count: qty });
     render();
   }
 
@@ -357,10 +391,52 @@
   }
 
   function rebuildColorMap() {
-    // Keep colors stable for remaining apporteurs
     const used = new Set(groups.map(g => g.apporteur));
     for (const key of Object.keys(apporteurColorMap)) {
       if (!used.has(key)) delete apporteurColorMap[key];
+    }
+  }
+
+  function cellContent(apporteur, cepage) {
+    let html = `<span class="cell-apporteur">${apporteur}</span>`;
+    if (cepage) {
+      html += `<span class="cell-cepage">${cepage}</span>`;
+    }
+    return html;
+  }
+
+  function createCell(type, apporteur, cepage, color, x, y, w, h, fontSize) {
+    const el = document.createElement('div');
+    el.className = 'grid-cell';
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    el.style.width = w + 'px';
+    el.style.height = h + 'px';
+    el.style.fontSize = fontSize + 'px';
+    el.style.background = color;
+    el.innerHTML = cellContent(apporteur, cepage);
+
+    if (type === 'bottiche') {
+      const hatch = document.createElement('div');
+      hatch.className = 'hatch-overlay';
+      hatch.innerHTML = `<svg width="100%" height="100%"><rect width="100%" height="100%" fill="url(#hatch)"/></svg>`;
+      el.appendChild(hatch);
+    }
+
+    return el;
+  }
+
+  // Calculate Y position based on stack direction
+  // row = 0 is the first item placed
+  // "left" (conducteur) = bottom-up: row 0 at bottom
+  // "right" (passager) = top-down: row 0 at top
+  function calcY(row, cellAcross, scale) {
+    if (stackDirection === 'left') {
+      // Bottom-up: row 0 at bottom
+      return (TRAILER_W - (row + 1) * cellAcross) * scale;
+    } else {
+      // Top-down: row 0 at top
+      return (row * cellAcross) * scale;
     }
   }
 
@@ -386,7 +462,7 @@
     let allItems = [];
     groups.forEach(g => {
       for (let i = 0; i < g.count; i++) {
-        allItems.push({ type: g.type, apporteur: g.apporteur });
+        allItems.push({ type: g.type, apporteur: g.apporteur, cepage: g.cepage });
       }
     });
 
@@ -402,59 +478,106 @@
       if (item.type === 'bac') {
         const colDepth = BAC_DEPTH;
         const cellAcross = BAC_ACROSS;
-        let row = 0;
-        while (idx < allItems.length && allItems[idx].type === 'bac' && row < BAC_PER_ROW) {
-          const it = allItems[idx];
-          const color = getApporteurColor(it.apporteur);
-          const el = document.createElement('div');
-          el.className = 'grid-cell bac';
-          el.style.left = (usedCm * scale) + 'px';
-          el.style.width = (colDepth * scale) + 'px';
-          el.style.height = (cellAcross * scale) + 'px';
-          el.style.fontSize = fontSize + 'px';
-          el.style.background = color;
-          el.textContent = it.apporteur;
 
-          if (stackDirection === 'left') {
-            el.style.top = (row * cellAcross * scale) + 'px';
-          } else {
-            el.style.bottom = (row * cellAcross * scale) + 'px';
-          }
-
-          grid.appendChild(el);
-          row++; idx++;
+        // Count consecutive bacs
+        let bacCount = 0;
+        let tempIdx = idx;
+        while (tempIdx < allItems.length && allItems[tempIdx].type === 'bac') {
+          bacCount++; tempIdx++;
         }
-        usedCm += colDepth;
+
+        // Check for bottiches to imbricate with odd bac
+        let nextBottiches = [];
+        if (bacCount % 2 === 1) {
+          let bIdx = idx + bacCount;
+          while (bIdx < allItems.length && allItems[bIdx].type === 'bottiche' && nextBottiches.length < 4) {
+            nextBottiches.push(allItems[bIdx]);
+            bIdx++;
+          }
+        }
+
+        let placedBacs = 0;
+        while (idx < allItems.length && allItems[idx].type === 'bac') {
+          const remaining = bacCount - placedBacs;
+
+          if (remaining === 1 && nextBottiches.length > 0) {
+            // Odd bac + imbricated bottiches
+            const it = allItems[idx];
+            const color = getApporteurColor(it.apporteur);
+
+            const yBac = calcY(0, cellAcross, scale);
+            grid.appendChild(createCell('bac', it.apporteur, it.cepage, color,
+              usedCm * scale, yBac, colDepth * scale, cellAcross * scale, fontSize));
+            idx++; placedBacs++;
+
+            // Place up to 4 bottiches in remaining width
+            const bacYcm = stackDirection === 'left'
+              ? TRAILER_W - cellAcross  // bac at bottom
+              : 0;                       // bac at top
+            
+            let bPlaced = 0;
+            for (let dRow = 0; dRow < IMBRIC_PER_DEPTH && bPlaced < nextBottiches.length; dRow++) {
+              for (let wRow = 0; wRow < IMBRIC_PER_WIDTH && bPlaced < nextBottiches.length; wRow++) {
+                const bit = nextBottiches[bPlaced];
+                const bColor = getApporteurColor(bit.apporteur);
+
+                const bx = usedCm + dRow * IMBRIC_BOTTICHE_D;
+                let by;
+                if (stackDirection === 'left') {
+                  // Bac at bottom, bottiches above it (toward top)
+                  by = bacYcm - (wRow + 1) * IMBRIC_BOTTICHE_W;
+                } else {
+                  // Bac at top, bottiches below it (toward bottom)
+                  by = cellAcross + wRow * IMBRIC_BOTTICHE_W;
+                }
+
+                grid.appendChild(createCell('bottiche', bit.apporteur, bit.cepage, bColor,
+                  bx * scale, by * scale,
+                  IMBRIC_BOTTICHE_D * scale, IMBRIC_BOTTICHE_W * scale,
+                  Math.max(5, fontSize - 2)));
+
+                bPlaced++;
+                idx++;
+              }
+            }
+
+            usedCm += colDepth;
+          } else {
+            // Normal pair or last single bac without imbrication
+            let row = 0;
+            const colStart = usedCm;
+            while (idx < allItems.length && allItems[idx].type === 'bac' && row < BAC_PER_ROW) {
+              const it = allItems[idx];
+              const color = getApporteurColor(it.apporteur);
+              const yPos = calcY(row, cellAcross, scale);
+
+              grid.appendChild(createCell('bac', it.apporteur, it.cepage, color,
+                colStart * scale, yPos,
+                colDepth * scale, cellAcross * scale, fontSize));
+
+              row++; idx++; placedBacs++;
+            }
+            usedCm += colDepth;
+          }
+        }
+
       } else {
+        // Bottiches
         const colDepth = bd.l;
         const cellAcross = bd.w;
         const perRow = bd.perRow;
         let row = 0;
+
         while (idx < allItems.length && allItems[idx].type === 'bottiche' && row < perRow) {
           const it = allItems[idx];
           const color = getApporteurColor(it.apporteur);
-          const el = document.createElement('div');
-          el.className = 'grid-cell bottiche';
-          el.style.left = (usedCm * scale) + 'px';
-          el.style.width = (colDepth * scale) + 'px';
-          el.style.height = (cellAcross * scale) + 'px';
-          el.style.fontSize = Math.max(6, fontSize - 1) + 'px';
-          el.style.background = color;
-          el.textContent = it.apporteur;
+          const yPos = calcY(row, cellAcross, scale);
 
-          // Hatch overlay for bottiches
-          const hatch = document.createElement('div');
-          hatch.className = 'hatch-overlay';
-          hatch.innerHTML = `<svg width="100%" height="100%"><rect width="100%" height="100%" fill="url(#hatch)"/></svg>`;
-          el.appendChild(hatch);
+          grid.appendChild(createCell('bottiche', it.apporteur, it.cepage, color,
+            usedCm * scale, yPos,
+            colDepth * scale, cellAcross * scale,
+            Math.max(6, fontSize - 1)));
 
-          if (stackDirection === 'left') {
-            el.style.top = (row * cellAcross * scale) + 'px';
-          } else {
-            el.style.bottom = (row * cellAcross * scale) + 'px';
-          }
-
-          grid.appendChild(el);
           row++; idx++;
         }
         usedCm += colDepth;
@@ -493,12 +616,13 @@
     listEl.innerHTML = groups.map(g => {
       const color = getApporteurColor(g.apporteur);
       const typeLabel = g.type === 'bac' ? 'Bac' : 'Bottiche';
+      const detail = [g.apporteur, g.cepage].filter(Boolean).join(' · ');
       return `
         <div class="item-list-entry">
           <div class="color-swatch" style="background:${color};"></div>
           <div class="entry-info">
             <div class="name">${g.count}× ${typeLabel}</div>
-            <div class="apporteur">${g.apporteur}</div>
+            <div class="detail">${detail}</div>
           </div>
           <button class="btn-del" onclick="removeGroup(${g.id})">🗑</button>
         </div>`;
